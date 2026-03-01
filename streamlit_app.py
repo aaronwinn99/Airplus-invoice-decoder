@@ -41,9 +41,9 @@ def process_invoice_data(df):
     result_1910.rename(columns={'Tax(SC)': 'Amount'}, inplace=True)
     
     # ========== REST.py Logic ==========
-    df_rest = df[['Invoice No', 'Invoice Date', 'Place', 'Sales Date', 'Accounting Unit', 'Cost Centre', 'Project No', 'Type', 'Service line2', 'Item No', 'Name', 'Travel Date', 'Net Amount (SC)', 'VAT Rate']].copy()
+    df_rest = df[['Invoice No', 'Invoice Date', 'Place', 'Sales Date', 'Order No', 'Cost Centre', 'Project No', 'Type', 'Service line2', 'Item No', 'Name', 'Travel Date', 'Net Amount (SC)', 'VAT Rate']].copy()
     
-    df_rest.rename(columns={'Accounting Unit': 'Account Code'}, inplace=True)
+    df_rest.rename(columns={'Order No': 'Account Code'}, inplace=True)
     df_rest['Posting type'] = 'GL'
     
     # Track originally NA values BEFORE any conversion
