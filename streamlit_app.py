@@ -45,6 +45,11 @@ def process_invoice_data(df):
     
     df_rest.rename(columns={'Accounting Unit': 'Account Code'}, inplace=True)
     df_rest['Posting type'] = 'GL'
+    
+    # Track originally NA values BEFORE any conversion
+    mask_na = df_rest['Account Code'].isna()
+    
+    # Now convert to numeric (will turn non-numeric into NaN, but we tracked original NAs)
     df_rest['Account Code'] = pd.to_numeric(df_rest['Account Code'], errors='coerce').astype('Int64')
     
     # Rename Net Amount (SC) to Amount
@@ -61,8 +66,7 @@ def process_invoice_data(df):
     df_rest.loc[mask1, 'Project No'] = df_rest.loc[mask1, 'Project No'].str[:14] + '-' + df_rest.loc[mask1, 'Project No'].str[14:]
     df_rest.loc[mask2, 'Project No'] = ''
     
-    # Account Code logic
-    mask_na = df_rest['Account Code'].isna()
+    # Account Code logic - only apply to originally NA values
     mask_650 = df_rest['Project No'].str.endswith('650').fillna(False)
     df_rest.loc[mask_na & mask_650, 'Account Code'] = 4300
     df_rest.loc[mask_na & ~mask_650, 'Account Code'] = 4301
