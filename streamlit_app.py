@@ -12,6 +12,8 @@ def process_invoice_data(df):
     
     # Replace 'NO' in Project No with blank (case-insensitive)
     df = df.copy()
+    df.columns = df.columns.str.replace('Order No', 'Activity Code', regex=False)
+    df.columns = df.columns.str.replace('Action No', 'Account Code', regex=False)
     df['Project No'] = df['Project No'].apply(lambda x: '' if (isinstance(x, str) and x.strip().upper() == 'NO') else x)
     
     # ========== 1300.py Logic ==========
@@ -41,9 +43,8 @@ def process_invoice_data(df):
     result_1910.rename(columns={'Tax(SC)': 'Amount'}, inplace=True)
     
     # ========== REST.py Logic ==========
-    df_rest = df[['Invoice No', 'Invoice Date', 'Place', 'Sales Date', 'Order No', 'Cost Centre', 'Project No', 'Type', 'Service line2', 'Item No', 'Name', 'Travel Date', 'Net Amount (SC)', 'VAT Rate']].copy()
+    df_rest = df[['Invoice No', 'Invoice Date', 'Place', 'Sales Date', 'Account Code', 'Cost Centre', 'Project No', 'Type', 'Service line2', 'Item No', 'Name', 'Travel Date', 'Net Amount (SC)', 'VAT Rate']].copy()
     
-    df_rest.rename(columns={'Order No': 'Account Code'}, inplace=True)
     df_rest['Posting type'] = 'GL'
     
     # Track originally NA values BEFORE any conversion
