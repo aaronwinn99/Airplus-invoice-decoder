@@ -45,7 +45,7 @@ def process_invoice_data(df):
     
     df_rest.rename(columns={'Accounting Unit': 'Account Code'}, inplace=True)
     df_rest['Posting type'] = 'GL'
-    # Keep Account Code as-is (can be numeric or text like 'CEUROPE')
+    df_rest['Account Code'] = pd.to_numeric(df_rest['Account Code'], errors='coerce').astype('Int64')
     
     # Rename Net Amount (SC) to Amount
     df_rest.rename(columns={'Net Amount (SC)': 'Amount'}, inplace=True)
@@ -56,17 +56,15 @@ def process_invoice_data(df):
     # Project No formatting
     mask = df_rest['Project No'].str.len() == 16
     mask1 = df_rest['Project No'].str.len() == 17
+    mask2 = df_rest['Project No'] == 'NO'
     df_rest.loc[mask, 'Project No'] = df_rest.loc[mask, 'Project No'].str[:12] + '-0' + df_rest.loc[mask, 'Project No'].str[12:]
     df_rest.loc[mask1, 'Project No'] = df_rest.loc[mask1, 'Project No'].str[:14] + '-' + df_rest.loc[mask1, 'Project No'].str[14:]
+    df_rest.loc[mask2, 'Project No'] = ''
     
-    # Replace NA Account Code based on Project No ending
-    mask_na = df_rest['Account Code'].isna()  # Find NA values
-    mask_650 = df_rest['Project No'].str.endswith('650').fillna(False)  # Project No ends with 650
-    
-    # If NA and ends with 650 → 4300
+    # Account Code logic
+    mask_na = df_rest['Account Code'].isna()
+    mask_650 = df_rest['Project No'].str.endswith('650').fillna(False)
     df_rest.loc[mask_na & mask_650, 'Account Code'] = 4300
-    
-    # If NA and doesn't end with 650 → 4301
     df_rest.loc[mask_na & ~mask_650, 'Account Code'] = 4301
     
     # Activity Code logic
@@ -155,7 +153,7 @@ def process_invoice_data(df):
     combined_df = combined_df[desired_columns]
     
     # Transform data types
-    # Keep Account Code as-is (can be integer or string like 'CEUROPE')
+    combined_df['Account Code'] = pd.to_numeric(combined_df['Account Code'], errors='coerce').astype('Int64')
     combined_df['Cost Centre'] = combined_df['Cost Centre'].astype('string')
     combined_df['Invoice Date'] = pd.to_datetime(combined_df['Invoice Date'], format='%d.%m.%Y')
     
