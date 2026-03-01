@@ -25,8 +25,9 @@ def process_invoice_data(df):
     
     result_1300['Gross Amount'] = result_1300['Gross Amount'].round(2)*-1  
     result_1300['Posting type'] = 'AP'
-    result_1300['Account Code'] = '1300'
+    result_1300['Account Code'] = 1300
     result_1300['Description'] = result_1300['Invoice No'].astype(str) + ' ' + result_1300['Invoice Date'].astype(str)
+    result_1300['Account Code'] = result_1300['Account Code'].astype('Int64')
     
     # ========== 1910.py Logic ==========
     result_1910 = df.groupby('Invoice No', as_index=False).agg({
@@ -36,8 +37,9 @@ def process_invoice_data(df):
     })
     
     result_1910['Posting type'] = 'GL'
-    result_1910['Account Code'] = '1910'
+    result_1910['Account Code'] = 1910
     result_1910['Description'] = result_1910['Invoice No'].astype(str) + ' ' + result_1910['Invoice Date'].astype(str)
+    result_1910['Account Code'] = result_1910['Account Code'].astype('Int64')
     result_1910.rename(columns={'Tax(SC)': 'Amount'}, inplace=True)
     
     # ========== REST.py Logic ==========
@@ -45,17 +47,7 @@ def process_invoice_data(df):
     
     df_rest.rename(columns={'Accounting Unit': 'Account Code'}, inplace=True)
     df_rest['Posting type'] = 'GL'
-    
-    # Track which Account Codes are originally NA BEFORE converting
-    mask_na = df_rest['Account Code'].isna()
-    
-    # Now convert to numeric
-    df_rest['Account Code'] = pd.to_numeric(df_rest['Account Code'], errors='coerce')
-    
-    # Apply logic only to originally NA values
-    mask_650 = df_rest['Project No'].str.endswith('650').fillna(False)
-    df_rest.loc[mask_na & mask_650, 'Account Code'] = 4300
-    df_rest.loc[mask_na & ~mask_650, 'Account Code'] = 4301
+    df_rest['Account Code'] = df_rest['Account Code'].astype('Int64')
     
     # Rename Net Amount (SC) to Amount
     df_rest.rename(columns={'Net Amount (SC)': 'Amount'}, inplace=True)
@@ -68,6 +60,16 @@ def process_invoice_data(df):
     mask1 = df_rest['Project No'].str.len() == 17
     df_rest.loc[mask, 'Project No'] = df_rest.loc[mask, 'Project No'].str[:12] + '-0' + df_rest.loc[mask, 'Project No'].str[12:]
     df_rest.loc[mask1, 'Project No'] = df_rest.loc[mask1, 'Project No'].str[:14] + '-' + df_rest.loc[mask1, 'Project No'].str[14:]
+    
+    # Replace NA Account Code based on Project No ending
+    mask_na = df_rest['Account Code'].isna()  # Find NA values
+    mask_650 = df_rest['Project No'].str.endswith('650').fillna(False)  # Project No ends with 650
+    
+    # If NA and ends with 650 → 4300
+    df_rest.loc[mask_na & mask_650, 'Account Code'] = 4300
+    
+    # If NA and doesn't end with 650 → 4301
+    df_rest.loc[mask_na & ~mask_650, 'Account Code'] = 4301
     
     # Activity Code logic
     activity_codes = []
@@ -155,8 +157,7 @@ def process_invoice_data(df):
     combined_df = combined_df[desired_columns]
     
     # Transform data types
-    # Account Code is already numeric from df_rest, result_1300, and result_1910
-    combined_df['Account Code'] = pd.to_numeric(combined_df['Account Code'], errors='coerce').astype('Int64')
+    combined_df['Account Code'] = combined_df['Account Code'].astype('Int64')
     combined_df['Cost Centre'] = combined_df['Cost Centre'].astype('string')
     combined_df['Invoice Date'] = pd.to_datetime(combined_df['Invoice Date'], format='%d.%m.%Y')
     
