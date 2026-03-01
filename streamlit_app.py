@@ -12,7 +12,7 @@ def process_invoice_data(df):
     
     # Replace 'NO' in Project No with blank (case-insensitive)
     df = df.copy()
-    df['Project No'] = df['Project No'].apply(lambda x: '' if (isinstance(x, str) and x.upper() == 'NO') else x)
+    df['Project No'] = df['Project No'].apply(lambda x: '' if (isinstance(x, str) and x.strip().upper() == 'NO') else x)
     
     # ========== 1300.py Logic ==========
     unique_df = df.drop_duplicates(subset=['Invoice No', 'Item No'], keep='first')
@@ -56,10 +56,8 @@ def process_invoice_data(df):
     # Project No formatting
     mask = df_rest['Project No'].str.len() == 16
     mask1 = df_rest['Project No'].str.len() == 17
-    mask2 = (df_rest['Project No'].str.len() < 16) & (df_rest['Project No'].notna())
     df_rest.loc[mask, 'Project No'] = df_rest.loc[mask, 'Project No'].str[:12] + '-0' + df_rest.loc[mask, 'Project No'].str[12:]
     df_rest.loc[mask1, 'Project No'] = df_rest.loc[mask1, 'Project No'].str[:14] + '-' + df_rest.loc[mask1, 'Project No'].str[14:]
-    df_rest.loc[mask2, 'Project No'] = df_rest.loc[mask2, 'Project No'] + ' PROJECT NUMBER INC'
     
     # Account Code logic
     mask_na = df_rest['Account Code'].isna()
