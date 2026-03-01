@@ -27,7 +27,6 @@ def process_invoice_data(df):
     result_1300['Posting type'] = 'AP'
     result_1300['Account Code'] = 1300
     result_1300['Description'] = result_1300['Invoice No'].astype(str) + ' ' + result_1300['Invoice Date'].astype(str)
-    result_1300['Account Code'] = result_1300['Account Code'].astype('Int64')
     
     # ========== 1910.py Logic ==========
     result_1910 = df.groupby('Invoice No', as_index=False).agg({
@@ -39,7 +38,6 @@ def process_invoice_data(df):
     result_1910['Posting type'] = 'GL'
     result_1910['Account Code'] = 1910
     result_1910['Description'] = result_1910['Invoice No'].astype(str) + ' ' + result_1910['Invoice Date'].astype(str)
-    result_1910['Account Code'] = result_1910['Account Code'].astype('Int64')
     result_1910.rename(columns={'Tax(SC)': 'Amount'}, inplace=True)
     
     # ========== REST.py Logic ==========
@@ -47,7 +45,7 @@ def process_invoice_data(df):
     
     df_rest.rename(columns={'Accounting Unit': 'Account Code'}, inplace=True)
     df_rest['Posting type'] = 'GL'
-    df_rest['Account Code'] = df_rest['Account Code'].astype('Int64')
+    # Keep Account Code as-is (can be numeric or text like 'CEUROPE')
     
     # Rename Net Amount (SC) to Amount
     df_rest.rename(columns={'Net Amount (SC)': 'Amount'}, inplace=True)
@@ -157,7 +155,7 @@ def process_invoice_data(df):
     combined_df = combined_df[desired_columns]
     
     # Transform data types
-    combined_df['Account Code'] = combined_df['Account Code'].astype('Int64')
+    # Keep Account Code as-is (can be integer or string like 'CEUROPE')
     combined_df['Cost Centre'] = combined_df['Cost Centre'].astype('string')
     combined_df['Invoice Date'] = pd.to_datetime(combined_df['Invoice Date'], format='%d.%m.%Y')
     
