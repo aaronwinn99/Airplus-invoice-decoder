@@ -45,8 +45,8 @@ def process_invoice_data(df):
     
     df_rest.rename(columns={'Accounting Unit': 'Account Code'}, inplace=True)
     df_rest['Posting type'] = 'GL'
-    # Keep Account Code as string to preserve original values
-    # Don't convert to numeric yet - we need original values for the logic below
+    # Convert Account Code to numeric early (like in rest.py) to match behavior
+    df_rest['Account Code'] = pd.to_numeric(df_rest['Account Code'], errors='coerce')
     
     # Rename Net Amount (SC) to Amount
     df_rest.rename(columns={'Net Amount (SC)': 'Amount'}, inplace=True)
@@ -156,8 +156,8 @@ def process_invoice_data(df):
     combined_df = combined_df[desired_columns]
     
     # Transform data types
-    # Keep Account Code as string to preserve original values
-    combined_df['Account Code'] = combined_df['Account Code'].astype('string')
+    # Account Code is already numeric from df_rest, result_1300, and result_1910
+    combined_df['Account Code'] = pd.to_numeric(combined_df['Account Code'], errors='coerce').astype('Int64')
     combined_df['Cost Centre'] = combined_df['Cost Centre'].astype('string')
     combined_df['Invoice Date'] = pd.to_datetime(combined_df['Invoice Date'], format='%d.%m.%Y')
     
