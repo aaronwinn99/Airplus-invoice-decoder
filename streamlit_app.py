@@ -61,7 +61,7 @@ def process_invoice_data(df):
     
     # Account Code logic
     mask_na = df_rest['Account Code'].isna()
-    mask_650 = df_rest['Project No'].str.endswith('650').fillna(False)
+    mask_650 = (df_rest['Project No'].str.len() > 0) & (df_rest['Project No'].str.upper() != 'NO') & (df_rest['Project No'].str.endswith('650').fillna(False))
     df_rest.loc[mask_na & mask_650, 'Account Code'] = 4300
     df_rest.loc[mask_na & ~mask_650, 'Account Code'] = 4301
     
