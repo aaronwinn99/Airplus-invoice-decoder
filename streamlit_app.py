@@ -45,7 +45,8 @@ def process_invoice_data(df):
     
     df_rest.rename(columns={'Accounting Unit': 'Account Code'}, inplace=True)
     df_rest['Posting type'] = 'GL'
-    df_rest['Account Code'] = pd.to_numeric(df_rest['Account Code'], errors='coerce')
+    # Keep Account Code as string to preserve original values
+    # Don't convert to numeric yet - we need original values for the logic below
     
     # Rename Net Amount (SC) to Amount
     df_rest.rename(columns={'Net Amount (SC)': 'Amount'}, inplace=True)
@@ -60,10 +61,13 @@ def process_invoice_data(df):
     df_rest.loc[mask1, 'Project No'] = df_rest.loc[mask1, 'Project No'].str[:14] + '-' + df_rest.loc[mask1, 'Project No'].str[14:]
     
     # Account Code logic
-    mask_na = df_rest['Account Code'].isna()
-    mask_650 = (df_rest['Project No'].str.len() > 0) & (df_rest['Project No'].str.upper() != 'NO') & (df_rest['Project No'].str.endswith('650').fillna(False))
-    df_rest.loc[mask_na & mask_650, 'Account Code'] = 4300
-    df_rest.loc[mask_na & ~mask_650, 'Account Code'] = 4301
+    # Only fill in Account Code if it's empty/null AND Project No has 16 or 17 characters
+    mask_valid_project = (df_rest['Project No'].str.len() == 16) | (df_rest['Project No'].str.len() == 17)
+    mask_650 = mask_valid_project & (df_rest['Project No'].str.endswith('650').fillna(False))
+    mask_account_empty = (df_rest['Account Code'].isna()) | (df_rest['Account Code'] == '') | (df_rest['Account Code'].astype(str).str.upper() == 'NAN')
+    # Only override Account Code when it's empty AND Project No has 16 or 17 characters
+    df_rest.loc[mask_account_empty & mask_650, 'Account Code'] = 4300
+    df_rest.loc[mask_account_empty & mask_valid_project & ~mask_650, 'Account Code'] = 4301
     
     # Activity Code logic
     activity_codes = []
