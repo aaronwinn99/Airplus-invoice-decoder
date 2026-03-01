@@ -49,8 +49,8 @@ def process_invoice_data(df):
     # Track originally NA values BEFORE any conversion
     mask_na = df_rest['Account Code'].isna()
     
-    # Now convert to numeric (will turn non-numeric into NaN, but we tracked original NAs)
-    df_rest['Account Code'] = pd.to_numeric(df_rest['Account Code'], errors='coerce').astype('Int64')
+    # DO NOT convert Account Code - keep original types (can be numeric or text like 'CEUROPE')
+    # Only apply logic below to originally NA values
     
     # Rename Net Amount (SC) to Amount
     df_rest.rename(columns={'Net Amount (SC)': 'Amount'}, inplace=True)
@@ -157,7 +157,6 @@ def process_invoice_data(df):
     combined_df = combined_df[desired_columns]
     
     # Transform data types
-    combined_df['Account Code'] = pd.to_numeric(combined_df['Account Code'], errors='coerce').astype('Int64')
     combined_df['Cost Centre'] = combined_df['Cost Centre'].astype('string')
     combined_df['Invoice Date'] = pd.to_datetime(combined_df['Invoice Date'], format='%d.%m.%Y')
     
