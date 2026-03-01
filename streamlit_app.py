@@ -49,8 +49,8 @@ def process_invoice_data(df):
     # Track originally NA values BEFORE any conversion
     mask_na = df_rest['Account Code'].isna()
     
-    # DO NOT convert Account Code - keep original types (can be numeric or text like 'CEUROPE')
-    # Only apply logic below to originally NA values
+    # Convert to numeric - this will turn any non-numeric text into NaN
+    df_rest['Account Code'] = pd.to_numeric(df_rest['Account Code'], errors='coerce')
     
     # Rename Net Amount (SC) to Amount
     df_rest.rename(columns={'Net Amount (SC)': 'Amount'}, inplace=True)
