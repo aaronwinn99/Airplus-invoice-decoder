@@ -4,7 +4,7 @@ from da import df
 # First, keep Type and Merchant/Service columns temporarily to determine flight vs train
 df_full = df.copy()
 
-df = df[['Invoice No', 'Invoice Date', 'Place', 'Tax', 'Sales Date', 'Place', 'Sales Date', 'Account Code', 'Cost Centre', 'Project No', 'Activity Code', 'Type', 'Merchant', 'Service line2', 'Item No', 'Name', 'Travel Date']]
+df = df[['Invoice No', 'Invoice Date', 'Place', 'Tax', 'Sales Date', 'Place', 'Sales Date', 'Account Code', 'Cost Centre', 'Project No', 'Activity Code', 'Type', 'Merchant', 'Service line2', 'Item No', 'Name', 'Travel Date']].copy()
 df['Posting type'] = 'GL'
 df['Account Code'] = df['Account Code'].astype('Int64') 
 df['Activity Code'] = df['Activity Code'].astype('Int64')
@@ -19,7 +19,7 @@ df.loc[mask2, 'Project No'] = df.loc[mask2, 'Project No'] + ' PROJECT NUMBER INC
 
 # Replace NA Account Code based on Project No ending
 mask_na = df['Account Code'].isna()  # Find NA values
-mask_650 = df['Project No'].str.endswith('650')  # Project No ends with 650
+mask_650 = df['Project No'].str.endswith('650').fillna(False)  # Project No ends with 650
 
 # If NA and ends with 650 → 4300
 df.loc[mask_na & mask_650, 'Account Code'] = 4300

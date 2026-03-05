@@ -32,7 +32,7 @@ result_1910.rename(columns={'Tax': 'Amount'}, inplace=True)
 
 
 # ========== REST.py Logic ==========
-df_rest = df[['Invoice No', 'Invoice Date', 'Place', 'Sales Date', 'Account Code', 'Cost Centre', 'Project No', 'Activity Code', 'Type', 'Service line2', 'Item No', 'Name', 'Travel Date', 'Net Amount (SC)', 'VAT Rate']]
+df_rest = df[['Invoice No', 'Invoice Date', 'Place', 'Sales Date', 'Account Code', 'Cost Centre', 'Project No', 'Activity Code', 'Type', 'Service line2', 'Item No', 'Name', 'Travel Date', 'Net Amount (SC)', 'VAT Rate']].copy()
 df_rest['Posting type'] = 'GL'
 df_rest['Account Code'] = df_rest['Account Code'].astype('Int64') 
 df_rest['Activity Code'] = df_rest['Activity Code'].astype('Int64')
@@ -50,7 +50,7 @@ df_rest.loc[mask2, 'Project No'] = ''
 
 # Account Code logic
 mask_na = df_rest['Account Code'].isna()
-mask_650 = df_rest['Project No'].str.endswith('650')
+mask_650 = df_rest['Project No'].str.endswith('650').fillna(False)
 df_rest.loc[mask_na & mask_650, 'Account Code'] = 4300
 df_rest.loc[mask_na & ~mask_650, 'Account Code'] = 4301
 
