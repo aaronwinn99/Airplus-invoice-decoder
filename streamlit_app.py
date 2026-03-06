@@ -18,8 +18,8 @@ st.set_page_config(
 # ============================================================================
 
 page = st.sidebar.radio(
-    "📑 Select Supplier",
-    ["🛫 Airplus", "🏨 Ehotel - Rechuntype", "🏨 Ehotel - Ausclen"],
+    "📑 Select file",
+    ["🛫 Airplus", "🏨 Ehotel - Rechun", "🏨 Ehotel - Ausclen"],
     label_visibility="visible"
 )
 
@@ -53,6 +53,7 @@ if page == "🛫 Airplus":
         result_1300['Posting type'] = 'AP'
         result_1300['Account Code'] = 1300
         result_1300['Description'] = result_1300['Invoice No'].astype(str) + ' ' + result_1300['Invoice Date'].astype(str)
+        result_1300['SUPID'] = 41297
         
         # ========== 1910.py Logic ==========
         result_1910 = df.groupby('Invoice No', as_index=False).agg({
@@ -65,11 +66,13 @@ if page == "🛫 Airplus":
         result_1910['Account Code'] = 1910
         result_1910['Description'] = result_1910['Invoice No'].astype(str) + ' ' + result_1910['Invoice Date'].astype(str)
         result_1910.rename(columns={'Tax(SC)': 'Amount'}, inplace=True)
+        result_1910['SUPID'] = 41297
         
         # ========== REST.py Logic ==========
         df_rest = df[['Invoice No', 'Invoice Date', 'Place', 'Sales Date', 'Account Code', 'Cost Centre', 'Project No', 'Type', 'Service line2', 'Item No', 'Name', 'Travel Date', 'Net Amount (SC)', 'VAT Rate']].copy()
         
         df_rest['Posting type'] = 'GL'
+        df_rest['SUPID'] = 41297
         
         # Track originally NA values BEFORE any conversion
         mask_na = df_rest['Account Code'].isna()
@@ -177,7 +180,7 @@ if page == "🛫 Airplus":
         # Reorder columns in desired sequence
         desired_columns = ['Account Code', 'Cost Centre', 'Project No', 'Activity Code', 
                            'Invoice No', 'Invoice Date', 'Cur_amount', 'Amount', 
-                           'Description', 'Tax Code', 'Posting type']
+                           'Description', 'Tax Code', 'Posting type', 'SUPID']
         
         combined_df = combined_df[desired_columns]
         
@@ -308,12 +311,12 @@ if page == "🛫 Airplus":
 # EHOTEL RECHUNTYPE PAGE
 # ============================================================================
 
-elif page == "🏨 Ehotel - Rechuntype":
-    st.title("📊 Ehotel Rechuntype Journal Generator")
-    st.markdown("Upload Rechuntype CSV files and generate GL accounting entries")
+elif page == "🏨 Ehotel - Rechun":
+    st.title("📊 Ehotel Rechun Journal Generator")
+    st.markdown("Upload Rechun CSV files and generate GL accounting entries")
 
     def process_ehotel_rechuntype(df):
-        """Process Ehotel Rechuntype invoice data"""
+        """Process Ehotel Rechun invoice data"""
         
         df = df.copy()
         
@@ -332,13 +335,15 @@ elif page == "🏨 Ehotel - Rechuntype":
         # ========== TOTAL (AP - 1300) ==========
         total = df.groupby('Invoice Number', as_index=False).agg({
             'Invoice Date': 'first',
-            'Gross Amount': 'sum',
+            'Gross (Billing Currency)': 'sum',
         })
         total['Posting type'] = 'AP'
         total['Account Code'] = 1300
-        total['Amount'] = total['Gross Amount'] * -1
+
+        total['Amount'] = total['Gross (Billing Currency)'] * -1
         total['Cur_amount'] = total['Amount']
         total['Description'] = 'Invoice ' + total['Invoice Number'].astype(str) + ' dated ' + total['Invoice Date'].astype(str)
+        total['SUPID'] = 41253
         
         # ========== TAX (GL - 1910) ==========
         tax = df.groupby('Invoice Number', as_index=False).agg({
@@ -350,7 +355,7 @@ elif page == "🏨 Ehotel - Rechuntype":
         tax['Amount'] = tax['VAT (Billing Currency)']
         tax['Cur_amount'] = tax['Amount']
         tax['Description'] = 'VAT for Invoice ' + tax['Invoice Number'].astype(str)
-        
+        tax['SUPID'] = 41253
         # ========== DETAILS (GL - 4300/4301) ==========
         cols_to_use = ['Invoice Number', 'Cost Center', 'Net (Billing Currency)', 'Invoice Date'] + \
                       (['VAT Rate (%)'] if 'VAT Rate (%)' in df.columns else []) + \
@@ -359,6 +364,7 @@ elif page == "🏨 Ehotel - Rechuntype":
         rest['Posting type'] = 'GL'
         rest['Amount'] = rest['Net (Billing Currency)']
         rest['Cur_amount'] = rest['Amount']
+        rest['SUPID'] = 41253
         
         # Account Code logic
         if 'Project Number' in rest.columns:
@@ -422,7 +428,7 @@ elif page == "🏨 Ehotel - Rechuntype":
         # Reorder columns to match Airplus format
         desired_columns = ['Account Code', 'Cost Centre', 'Project No', 'Activity Code', 
                            'Invoice No', 'Invoice Date', 'Cur_amount', 'Amount', 
-                           'Description', 'Tax Code', 'Posting type']
+                           'Description', 'Tax Code', 'Posting type', 'SUPID']
         combined = combined[desired_columns]
         return combined
 
@@ -547,6 +553,7 @@ elif page == "🏨 Ehotel - Ausclen":
         total['Project No'] = pd.NA
         total['Activity Code'] = pd.NA
         total['Tax Code'] = pd.NA
+        total['SUPID'] = 41253
         
         # ========== TAX (GL - 1910) ==========
         tax = df.groupby('Invoice Number', as_index=False).agg({
@@ -566,7 +573,7 @@ elif page == "🏨 Ehotel - Ausclen":
         tax['Project No'] = pd.NA
         tax['Activity Code'] = pd.NA
         tax['Tax Code'] = pd.NA
-        
+        tax['SUPID'] = 41253
         # ========== DETAILS (GL - 4300/4301) ==========
         cols_to_use = ['Invoice Number', 'Cost Center', 'Net (Billing Currency)', 'Invoice Date', 'Receipt', 'Payment Receipts', 'Service Code'] + \
                       (['VAT Rate (%)'] if 'VAT Rate (%)' in df.columns else []) + \
@@ -575,6 +582,7 @@ elif page == "🏨 Ehotel - Ausclen":
         rest['Posting type'] = 'GL'
         rest['Amount'] = rest['Net (Billing Currency)']
         rest['Cur_amount'] = rest['Amount']
+        rest['SUPID'] = 41253
         
         # Account Code logic
         if 'Project Number' in rest.columns:
@@ -626,7 +634,7 @@ elif page == "🏨 Ehotel - Ausclen":
         # Reorder columns to match Airplus format
         desired_columns = ['Account Code', 'Cost Centre', 'Project No', 'Activity Code', 
                            'Invoice No', 'Invoice Date', 'Cur_amount', 'Amount', 
-                           'Description', 'Tax Code', 'Posting type']
+                           'Description', 'Tax Code', 'Posting type', 'SUPID']
         combined = combined[desired_columns]
         return combined
 
