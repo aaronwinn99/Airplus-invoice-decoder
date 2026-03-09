@@ -49,6 +49,7 @@ if page == "🛫 Airplus":
             'Sales Date': 'first',
         })
         
+        result_1300['Invoice No'] = result_1300['Invoice No'].str.replace(' ', '', regex=False)
         result_1300['Gross Amount'] = result_1300['Gross Amount'].round(2)*-1  
         result_1300['Posting type'] = 'AP'
         result_1300['Account Code'] = 1300
@@ -62,6 +63,7 @@ if page == "🛫 Airplus":
             'Sales Date': 'first',
         })
         
+        result_1910['Invoice No'] = result_1910['Invoice No'].str.replace(' ', '', regex=False)
         result_1910['Posting type'] = 'GL'
         result_1910['Account Code'] = 1910
         result_1910['Description'] = result_1910['Invoice No'].astype(str) + ' ' + result_1910['Invoice Date'].astype(str)
@@ -70,6 +72,7 @@ if page == "🛫 Airplus":
         
         # ========== REST.py Logic ==========
         df_rest = df[['Invoice No', 'Invoice Date', 'Place', 'Sales Date', 'Account Code', 'Cost Centre', 'Project No', 'Type', 'Service line2', 'Item No', 'Name', 'Travel Date', 'Net Amount (SC)', 'VAT Rate', 'Routing']].copy()
+        df_rest['Invoice No'] = df_rest['Invoice No'].str.replace(' ', '', regex=False)
         
         df_rest['Posting type'] = 'GL'
         df_rest['SUPID'] = 41297
