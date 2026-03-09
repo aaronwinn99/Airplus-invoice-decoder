@@ -24,7 +24,7 @@ page = st.sidebar.radio(
 )
 
 # ============================================================================
-# AIRPLUS PAGE (ORIGINAL CODE - UNCHANGED)
+# AIRPLUS PAGE 
 # ============================================================================
 
 if page == "🛫 Airplus":
@@ -69,7 +69,7 @@ if page == "🛫 Airplus":
         result_1910['SUPID'] = 41297
         
         # ========== REST.py Logic ==========
-        df_rest = df[['Invoice No', 'Invoice Date', 'Place', 'Sales Date', 'Account Code', 'Cost Centre', 'Project No', 'Type', 'Service line2', 'Item No', 'Name', 'Travel Date', 'Net Amount (SC)', 'VAT Rate']].copy()
+        df_rest = df[['Invoice No', 'Invoice Date', 'Place', 'Sales Date', 'Account Code', 'Cost Centre', 'Project No', 'Type', 'Service line2', 'Item No', 'Name', 'Travel Date', 'Net Amount (SC)', 'VAT Rate', 'Routing']].copy()
         
         df_rest['Posting type'] = 'GL'
         df_rest['SUPID'] = 41297
@@ -138,7 +138,8 @@ if page == "🛫 Airplus":
             df_rest['Invoice No'].astype(str) + ' POS' + 
             df_rest['Item No'].astype(str) + ' ' + 
             df_rest['Name'].fillna('') + ' ' + 
-            df_rest['Travel Date'].fillna('')
+            df_rest['Travel Date'].fillna('') + ' ' +
+            df_rest['Routing'].fillna('')
         ).str.strip()
         
         # Tax Code logic based on VAT rate

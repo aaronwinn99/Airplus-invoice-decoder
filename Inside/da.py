@@ -6,12 +6,12 @@ import os
 script_dir = os.path.dirname(os.path.abspath(__file__))
 # Go up one level to parent directory
 parent_dir = os.path.dirname(script_dir)
-csv_path = os.path.join(parent_dir, 'Ehotel.Re.csv')
-csv_path1 = os.path.join(parent_dir, 'Aus.csv')
+csv_path = os.path.join(parent_dir, 'Test.csv')
+#csv_path1 = os.path.join(parent_dir, 'Aus.csv')
 
 # Read CSV with correct delimiter and encoding
 df = pd.read_csv(csv_path, sep=';', encoding='ISO-8859-15')
-df1 = pd.read_csv(csv_path1, sep=';', encoding='ISO-8859-15')
+#df1 = pd.read_csv(csv_path1, sep=';', encoding='ISO-8859-15')
 
 # German to English column name translation dictionary
 german_to_english = {
@@ -81,41 +81,41 @@ german_to_english = {
 
 # Rename columns to English
 df = df.rename(columns=german_to_english)
-df1 = df1.rename(columns=german_to_english)
+#df1 = df1.rename(columns=german_to_english)
 
 # Remove completely empty columns (those that are all NaN)
 df = df.dropna(axis=1, how='all')
-df1 = df1.dropna(axis=1, how='all')
+#df1 = df1.dropna(axis=1, how='all')
 
 # Remove trailing empty columns
 df = df.loc[:, (df.astype(str) != '').any()]
-df1 = df1.loc[:, (df1.astype(str) != '').any()]
+#df1 = df1.loc[:, (df1.astype(str) != '').any()]
 
 # Convert VAT column to numeric for proper summing
-df['VAT (Billing Currency)'] = df['VAT (Billing Currency)'].astype(str).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
-df1['VAT (Billing Currency)'] = df1['VAT (Billing Currency)'].astype(str).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
-df['Net (Billing Currency)'] = df['Net (Billing Currency)'].astype(str).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
-df1['Net (Billing Currency)'] = df1['Net (Billing Currency)'].astype(str).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
-df['Gross Amount'] = df['Gross Amount'].astype(str).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
-df1['Gross Amount'] = df1['Gross Amount'].astype(str).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
-df['Invoice Date'] = pd.to_datetime(df['Invoice Date'], errors='coerce')
-df1['Invoice Date'] = pd.to_datetime(df1['Invoice Date'], errors='coerce')
-df['VAT Rate (%)'] = df['VAT Rate (%)'].astype(str).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
-df1['VAT Rate (%)'] = df1['VAT Rate (%)'].astype(str).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
-df['Gross (Billing Currency)'] = df['Gross (Billing Currency)'].astype(str).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
-df1['Gross (Billing Currency)'] = df1['Gross (Billing Currency)'].astype(str).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
-# Save to Excel
-# save_path = os.path.join(parent_dir, 'Cleaned_Test.xlsx')
-# save_path1 = os.path.join(parent_dir, 'Cleaned_Aus.xlsx')
-# df.to_excel(save_path, index=False)
+# df['VAT (Billing Currency)'] = df['VAT (Billing Currency)'].astype(str).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
+# #df1['VAT (Billing Currency)'] = df1['VAT (Billing Currency)'].astype(str).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
+# df['Net (Billing Currency)'] = df['Net (Billing Currency)'].astype(str).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
+# #df1['Net (Billing Currency)'] = df1['Net (Billing Currency)'].astype(str).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
+# df['Gross Amount'] = df['Gross Amount'].astype(str).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
+# #df1['Gross Amount'] = df1['Gross Amount'].astype(str).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
+# df['Invoice Date'] = pd.to_datetime(df['Invoice Date'], errors='coerce')
+# #df1['Invoice Date'] = pd.to_datetime(df1['Invoice Date'], errors='coerce')
+# df['VAT Rate (%)'] = df['VAT Rate (%)'].astype(str).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
+# ##df1['VAT Rate (%)'] = df1['VAT Rate (%)'].astype(str).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
+# df['Gross (Billing Currency)'] = df['Gross (Billing Currency)'].astype(str).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
+# #df1['Gross (Billing Currency)'] = df1['Gross (Billing Currency)'].astype(str).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
+# # Save to Excel
+save_path = os.path.join(parent_dir, 'Cleaned_Test.xlsx')
+#save_path1 = os.path.join(parent_dir, 'Cleaned_Aus.xlsx')
+df.to_excel(save_path, index=False)
 # df1.to_excel(save_path1, index=False)
-# print(f"\nCleaned data saved to: {save_path}")
+print(f"\nCleaned data saved to: {save_path}")
 # print(f"\nCleaned data saved to: {save_path1}")
-# print("\nColumns:", df.columns.tolist())
-# print("\nFirst few rows:\n")
-# print(df.head())
-# print("\nData types:")
-# print(df.dtypes)
+print("\nColumns:", df.columns.tolist())
+print("\nFirst few rows:\n")
+print(df.head())
+print("\nData types:")
+print(df.dtypes)
 
 # print("\nShape:", df1.shape)
 # print("\nColumns:", df1.columns.tolist())
@@ -186,69 +186,69 @@ df1['Gross (Billing Currency)'] = df1['Gross (Billing Currency)'].astype(str).st
 # work on the Ausleng
 
 
-total = df1.groupby('Invoice Number', as_index=False).agg({
-    'Invoice Date': 'first',
-    'Gross (Billing Currency)': 'sum',
-    'Receipt': 'first',
-    'Payment Receipts': 'first',
-    'Service Code': 'first',
+# total = df1.groupby('Invoice Number', as_index=False).agg({
+#     'Invoice Date': 'first',
+#     'Gross (Billing Currency)': 'sum',
+#     'Receipt': 'first',
+#     'Payment Receipts': 'first',
+#     'Service Code': 'first',
 
-})
+# })
 
-total['Posting type'] = 'AP'
-total['Account Code'] = '1300'
-total['Invoice Number'] = total['Receipt'].astype(str)+' '+total['Payment Receipts'].astype(str)+' '+total['Service Code'].astype(str)
-total['Description'] = total['Receipt'].astype(str) + ' Total'
+# total['Posting type'] = 'AP'
+# total['Account Code'] = '1300'
+# total['Invoice Number'] = total['Receipt'].astype(str)+' '+total['Payment Receipts'].astype(str)+' '+total['Service Code'].astype(str)
+# total['Description'] = total['Receipt'].astype(str) + ' Total'
 
-print("Total Result:")
-print(total)
+# print("Total Result:")
+# print(total)
 
-tax = df1.groupby('Invoice Number', as_index=False).agg({
-    'Receipt Date': 'first',
-    'VAT (Billing Currency)': 'sum',
-    'Receipt': 'first',
-    'Payment Receipts': 'first',
-    'Service Code': 'first',
-})
-tax['Posting type'] = 'GL'
-tax['Account Code'] = '1910'
+# tax = df1.groupby('Invoice Number', as_index=False).agg({
+#     'Receipt Date': 'first',
+#     'VAT (Billing Currency)': 'sum',
+#     'Receipt': 'first',
+#     'Payment Receipts': 'first',
+#     'Service Code': 'first',
+# })
+# tax['Posting type'] = 'GL'
+# tax['Account Code'] = '1910'
 
-tax['Invoice Number'] = tax['Receipt'].astype(str)+' '+tax['Payment Receipts'].astype(str)+' '+tax['Service Code'].astype(str)
+# tax['Invoice Number'] = tax['Receipt'].astype(str)+' '+tax['Payment Receipts'].astype(str)+' '+tax['Service Code'].astype(str)
 
-tax['Description'] = tax['Receipt'].astype(str) + ' Tax liability '
+# tax['Description'] = tax['Receipt'].astype(str) + ' Tax liability '
 
-print("Tax Result:")
-print(tax)
+# print("Tax Result:")
+# print(tax)
 
-rest = df1[['Invoice Number', 'Cost Center', 'Net (Billing Currency)', 'Invoice Date', 'VAT Rate (%)', 'Receipt', 'Payment Receipts', 'Service Code', 'Position Number', 'Name', 'Service Description 1'] + (['Project Number'] if 'Project Number' in df1.columns else [])].copy()
-rest['Invoice Number'] = rest['Receipt'].astype(str)+' '+rest['Payment Receipts'].astype(str)+' '+rest['Service Code'].astype(str)
-rest['Posting type'] = 'GL'
+# rest = df1[['Invoice Number', 'Cost Center', 'Net (Billing Currency)', 'Invoice Date', 'VAT Rate (%)', 'Receipt', 'Payment Receipts', 'Service Code', 'Position Number', 'Name', 'Service Description 1'] + (['Project Number'] if 'Project Number' in df1.columns else [])].copy()
+# rest['Invoice Number'] = rest['Receipt'].astype(str)+' '+rest['Payment Receipts'].astype(str)+' '+rest['Service Code'].astype(str)
+# rest['Posting type'] = 'GL'
 
-# Set Account Code based on Project Number if it exists
-if 'Project Number' in rest.columns:
-    rest['Account Code'] = rest.apply(lambda row: 4301 if str(row['Project Number']).endswith('650') else (4300 if pd.notna(row['Project Number']) and str(row['Project Number']).strip() != '' else 6300), axis=1)
-else:
-    rest['Account Code'] = 6300
+# # Set Account Code based on Project Number if it exists
+# if 'Project Number' in rest.columns:
+#     rest['Account Code'] = rest.apply(lambda row: 4301 if str(row['Project Number']).endswith('650') else (4300 if pd.notna(row['Project Number']) and str(row['Project Number']).strip() != '' else 6300), axis=1)
+# else:
+#     rest['Account Code'] = 6300
 
-# Process Project Number if it exists
-if 'Project Number' in rest.columns:
-    mask = rest['Project Number'].str.len() == 16
-    mask1 = rest['Project Number'].str.len() == 17
-    rest.loc[mask, 'Project Number'] = rest.loc[mask, 'Project Number'].str[:12] + '-0' + rest.loc[mask, 'Project Number'].str[12:]
-    rest.loc[mask1, 'Project Number'] = rest.loc[mask1, 'Project Number'].str[:14] + '-' + rest.loc[mask1, 'Project Number'].str[14:]
+# # Process Project Number if it exists
+# if 'Project Number' in rest.columns:
+#     mask = rest['Project Number'].str.len() == 16
+#     mask1 = rest['Project Number'].str.len() == 17
+#     rest.loc[mask, 'Project Number'] = rest.loc[mask, 'Project Number'].str[:12] + '-0' + rest.loc[mask, 'Project Number'].str[12:]
+#     rest.loc[mask1, 'Project Number'] = rest.loc[mask1, 'Project Number'].str[:14] + '-' + rest.loc[mask1, 'Project Number'].str[14:]
 
-tax_codes = []
-for idx, row in rest.iterrows():
-    vat_rate = row['VAT Rate (%)']
-    if vat_rate == 19:
-        tax_codes.append('SP')
-    elif vat_rate == 7:
-        tax_codes.append('PL')
-    else:
-        tax_codes.append('ZE')
+# tax_codes = []
+# for idx, row in rest.iterrows():
+#     vat_rate = row['VAT Rate (%)']
+#     if vat_rate == 19:
+#         tax_codes.append('SP')
+#     elif vat_rate == 7:
+#         tax_codes.append('PL')
+#     else:
+#         tax_codes.append('ZE')
 
-rest['Tax Code'] = tax_codes
-rest['Description'] = rest['Invoice Number'].astype(str) + ' POS ' + rest['Position Number'].astype(str) + ' ' + rest['Name'].astype(str) + ' ' + rest['Service Description 1'].astype(str)
+# rest['Tax Code'] = tax_codes
+# rest['Description'] = rest['Invoice Number'].astype(str) + ' POS ' + rest['Position Number'].astype(str) + ' ' + rest['Name'].astype(str) + ' ' + rest['Service Description 1'].astype(str)
 
-print("Rest Result:")
-print(rest)
+# print("Rest Result:")
+# print(rest)
