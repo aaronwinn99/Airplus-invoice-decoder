@@ -198,12 +198,13 @@ total = df1.groupby('Invoice Number', as_index=False).agg({
 total['Posting type'] = 'AP'
 total['Account Code'] = '1300'
 total['Invoice Number'] = total['Receipt'].astype(str)+' '+total['Payment Receipts'].astype(str)+' '+total['Service Code'].astype(str)
+total['Description'] = total['Receipt'].astype(str) + ' Total'
 
 print("Total Result:")
 print(total)
 
 tax = df1.groupby('Invoice Number', as_index=False).agg({
-    'Invoice Date': 'first',
+    'Receipt Date': 'first',
     'VAT (Billing Currency)': 'sum',
     'Receipt': 'first',
     'Payment Receipts': 'first',
@@ -214,12 +215,12 @@ tax['Account Code'] = '1910'
 
 tax['Invoice Number'] = tax['Receipt'].astype(str)+' '+tax['Payment Receipts'].astype(str)+' '+tax['Service Code'].astype(str)
 
-tax['Description'] = 'tax charged for ' + tax['Invoice Number'].astype(str) + ' ' + tax['Invoice Date'].astype(str)
+tax['Description'] = tax['Receipt'].astype(str) + ' Tax liability '
 
 print("Tax Result:")
 print(tax)
 
-rest = df1[['Invoice Number', 'Cost Center', 'Net (Billing Currency)', 'Invoice Date', 'VAT Rate (%)', 'Receipt', 'Payment Receipts', 'Service Code'] + (['Project Number'] if 'Project Number' in df1.columns else [])].copy()
+rest = df1[['Invoice Number', 'Cost Center', 'Net (Billing Currency)', 'Invoice Date', 'VAT Rate (%)', 'Receipt', 'Payment Receipts', 'Service Code', 'Position Number', 'Name', 'Service Description 1'] + (['Project Number'] if 'Project Number' in df1.columns else [])].copy()
 rest['Invoice Number'] = rest['Receipt'].astype(str)+' '+rest['Payment Receipts'].astype(str)+' '+rest['Service Code'].astype(str)
 rest['Posting type'] = 'GL'
 
@@ -247,7 +248,7 @@ for idx, row in rest.iterrows():
         tax_codes.append('ZE')
 
 rest['Tax Code'] = tax_codes
-rest['Description'] = 'posting for ' + rest['Invoice Number'].astype(str) + ' ' + rest['Invoice Date'].astype(str)
+rest['Description'] = rest['Invoice Number'].astype(str) + ' POS ' + rest['Position Number'].astype(str) + ' ' + rest['Name'].astype(str) + ' ' + rest['Service Description 1'].astype(str)
 
 print("Rest Result:")
 print(rest)

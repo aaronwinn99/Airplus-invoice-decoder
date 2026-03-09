@@ -19,7 +19,7 @@ st.set_page_config(
 
 page = st.sidebar.radio(
     "📑 Select file",
-    ["🛫 Airplus", "🏨 Ehotel - Rechun", "🏨 Ehotel - Ausclen"],
+    ["🛫 Airplus", "🏨 Ehotel - Rechnung", "🏨 Ehotel - Auslagen"],
     label_visibility="visible"
 )
 
@@ -308,15 +308,15 @@ if page == "🛫 Airplus":
         """)
 
 # ============================================================================
-# EHOTEL RECHUNTYPE PAGE
+# EHOTEL RECHNUNG PAGE
 # ============================================================================
 
-elif page == "🏨 Ehotel - Rechun":
-    st.title("📊 Ehotel Rechun Journal Generator")
-    st.markdown("Upload Rechun CSV files and generate GL accounting entries")
+elif page == "🏨 Ehotel - Rechnung":
+    st.title("📊 Ehotel Rechnung Journal Generator")
+    st.markdown("Upload Rechnung CSV files and generate GL accounting entries")
 
     def process_ehotel_rechuntype(df):
-        """Process Ehotel Rechun invoice data"""
+        """Process Ehotel Rechnung invoice data"""
         
         df = df.copy()
         
@@ -327,7 +327,7 @@ elif page == "🏨 Ehotel - Rechun":
                 df[col] = df[col].astype(str).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
         
         # Convert date columns
-        date_cols = ['Invoice Date']
+        date_cols = ['Invoice Date', 'Receipt Date']
         for col in date_cols:
             if col in df.columns:
                 df[col] = pd.to_datetime(df[col], format='%d.%m.%Y', errors='coerce')
@@ -342,7 +342,7 @@ elif page == "🏨 Ehotel - Rechun":
 
         total['Amount'] = total['Gross (Billing Currency)'] * -1
         total['Cur_amount'] = total['Amount']
-        total['Description'] = 'Invoice ' + total['Invoice Number'].astype(str) + ' dated ' + total['Invoice Date'].astype(str)
+        total['Description'] = total['Invoice Number'].astype(str) + ' Total'
         total['SUPID'] = 41253
         
         # ========== TAX (GL - 1910) ==========
@@ -354,10 +354,13 @@ elif page == "🏨 Ehotel - Rechun":
         tax['Account Code'] = 1910
         tax['Amount'] = tax['VAT (Billing Currency)']
         tax['Cur_amount'] = tax['Amount']
-        tax['Description'] = 'VAT for Invoice ' + tax['Invoice Number'].astype(str)
+        tax['Description'] = tax['Invoice Number'].astype(str) + ' Tax liability '
         tax['SUPID'] = 41253
         # ========== DETAILS (GL - 4300/4301) ==========
         cols_to_use = ['Invoice Number', 'Cost Center', 'Net (Billing Currency)', 'Invoice Date'] + \
+                      (['Position Number'] if 'Position Number' in df.columns else []) + \
+                      (['Name'] if 'Name' in df.columns else []) + \
+                      (['Service Description 1'] if 'Service Description 1' in df.columns else []) + \
                       (['VAT Rate (%)'] if 'VAT Rate (%)' in df.columns else []) + \
                       (['Project Number'] if 'Project Number' in df.columns else [])
         rest = df[cols_to_use].copy()
@@ -375,16 +378,19 @@ elif page == "🏨 Ehotel - Rechun":
             )
             rest['Project No'] = rest['Project Number']
             
-            # Format Project Number with dash
-            mask = rest['Project No'].astype(str).str.len() == 16
-            mask1 = rest['Project No'].astype(str).str.len() == 17
-            mask2 = rest['Project No'].astype(str) == 'NO'
-            rest.loc[mask, 'Project No'] = rest.loc[mask, 'Project No'].astype(str).str[:12] + '-0' + rest.loc[mask, 'Project No'].astype(str).str[12:]
-            rest.loc[mask1, 'Project No'] = rest.loc[mask1, 'Project No'].astype(str).str[:14] + '-' + rest.loc[mask1, 'Project No'].astype(str).str[14:]
+            # Format Project Number with dash - handle NaN values
+            rest['Project No'] = rest['Project No'].astype(str)
+            # Replace 'nan' strings with empty string
+            rest.loc[rest['Project No'] == 'nan', 'Project No'] = ''
+            mask = rest['Project No'].str.len() == 16
+            mask1 = rest['Project No'].str.len() == 17
+            mask2 = rest['Project No'] == 'NO'
+            rest.loc[mask, 'Project No'] = rest.loc[mask, 'Project No'].str[:12] + '-0' + rest.loc[mask, 'Project No'].str[12:]
+            rest.loc[mask1, 'Project No'] = rest.loc[mask1, 'Project No'].str[:14] + '-' + rest.loc[mask1, 'Project No'].str[14:]
             rest.loc[mask2, 'Project No'] = ''
         else:
             rest['Account Code'] = 6300
-            rest['Project No'] = pd.NA
+            rest['Project No'] = ''
         
         rest['Cost Centre'] = rest['Cost Center']
         rest['Activity Code'] = 110
@@ -403,7 +409,18 @@ elif page == "🏨 Ehotel - Rechun":
         else:
             rest['Tax Code'] = 'ZE'
         
-        rest['Description'] = 'Net amount for Invoice ' + rest['Invoice Number'].astype(str)
+        # Build description with optional columns
+        description_parts = [rest['Invoice Number'].astype(str)]
+        if 'Position Number' in rest.columns:
+            description_parts.append(' POS ' + rest['Position Number'].astype(str))
+        if 'Name' in rest.columns:
+            description_parts.append(' ' + rest['Name'].astype(str))
+        if 'Service Description 1' in rest.columns:
+            description_parts.append(' ' + rest['Service Description 1'].astype(str))
+        
+        rest['Description'] = description_parts[0]
+        for part in description_parts[1:]:
+            rest['Description'] = rest['Description'] + part
         rest['Cur_amount'] = rest['Amount']
         rest.rename(columns={'Invoice Number': 'Invoice No'}, inplace=True)
         
@@ -447,6 +464,9 @@ elif page == "🏨 Ehotel - Rechun":
             'MwSt(AbrW)': 'VAT (Billing Currency)',
             'Brutto(AW)': 'Gross (Billing Currency)',
             'MwSt-Satz(%)': 'VAT Rate (%)',
+            'Positionsnummer': 'Position Number',
+            'Name': 'Name',
+            'Leistungsbeschreibung1': 'Service Description 1',
         }
         
         df = df.rename(columns=german_to_english)
@@ -455,7 +475,7 @@ elif page == "🏨 Ehotel - Rechun":
 
     st.sidebar.header("📁 Upload Files")
     uploaded_files = st.sidebar.file_uploader(
-        "Choose Rechuntype CSV files",
+        "Choose Rechnung CSV files",
         type=['csv'],
         accept_multiple_files=True,
         key="ehotel_rech"
@@ -490,7 +510,7 @@ elif page == "🏨 Ehotel - Rechun":
                     st.download_button(
                         label="📥 Download Excel File",
                         data=excel_buffer.getvalue(),
-                        file_name="Ehotel_Rechuntype_Journal.xlsx",
+                        file_name="Ehotel_Rechnung_Journal.xlsx",
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
                     
@@ -508,18 +528,18 @@ elif page == "🏨 Ehotel - Rechun":
             except Exception as e:
                 st.error(f"❌ Error: {str(e)}")
     else:
-        st.info("👈 Upload Rechuntype CSV files to begin")
+        st.info("👈 Upload Rechnung CSV files to begin")
 
 # ============================================================================
-# EHOTEL AUSCLEN PAGE
+# EHOTEL AUSLAGEN PAGE
 # ============================================================================
 
-elif page == "🏨 Ehotel - Ausclen":
-    st.title("📊 Ehotel Ausclen Journal Generator")
-    st.markdown("Upload Ausclen CSV files and generate GL accounting entries")
+elif page == "🏨 Ehotel - Auslagen":
+    st.title("📊 Ehotel Auslagen Journal Generator")
+    st.markdown("Upload Auslagen CSV files and generate GL accounting entries")
 
     def process_ehotel_ausclen(df):
-        """Process Ehotel Ausclen invoice data"""
+        """Process Ehotel Auslagen invoice data"""
         
         df = df.copy()
         
@@ -530,25 +550,28 @@ elif page == "🏨 Ehotel - Ausclen":
                 df[col] = df[col].astype(str).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
         
         # Convert date columns
-        date_cols = ['Invoice Date']
+        date_cols = ['Invoice Date', 'Receipt Date']
         for col in date_cols:
             if col in df.columns:
                 df[col] = pd.to_datetime(df[col], format='%d.%m.%Y', errors='coerce')
         
         # ========== TOTAL (AP - 1300) ==========
         total = df.groupby('Invoice Number', as_index=False).agg({
-            'Invoice Date': 'first',
+            'Receipt Date': 'first',
             'Gross (Billing Currency)': 'sum',
             'Receipt': 'first',
             'Payment Receipts': 'first',
             'Service Code': 'first',
+            **({'Position Number': 'first'} if 'Position Number' in df.columns else {}),
+            **({'Name': 'first'} if 'Name' in df.columns else {}),
+            **({'Service Description 1': 'first'} if 'Service Description 1' in df.columns else {}),
         })
         total['Posting type'] = 'AP'
         total['Account Code'] = 1300
         total['Amount'] = total['Gross (Billing Currency)'] * -1
         total['Cur_amount'] = total['Amount']
         total['Invoice Number'] = total['Receipt'].astype(str) + ' ' + total['Payment Receipts'].astype(str) + ' ' + total['Service Code'].astype(str)
-        total['Description'] = 'Invoice ' + total['Invoice Number'].astype(str)
+        total['Description'] = total['Invoice Number'].astype(str) + ' POS ' + total['Position Number'].astype(str) + ' ' + total['Name'].astype(str) + ' ' + total['Service Description 1'].astype(str)
         total['Cost Centre'] = pd.NA
         total['Project No'] = pd.NA
         total['Activity Code'] = pd.NA
@@ -557,25 +580,31 @@ elif page == "🏨 Ehotel - Ausclen":
         
         # ========== TAX (GL - 1910) ==========
         tax = df.groupby('Invoice Number', as_index=False).agg({
-            'Invoice Date': 'first',
+            'Receipt Date': 'first',
             'VAT (Billing Currency)': 'sum',
             'Receipt': 'first',
             'Payment Receipts': 'first',
             'Service Code': 'first',
+            **({'Position Number': 'first'} if 'Position Number' in df.columns else {}),
+            **({'Name': 'first'} if 'Name' in df.columns else {}),
+            **({'Service Description 1': 'first'} if 'Service Description 1' in df.columns else {}),
         })
         tax['Posting type'] = 'GL'
         tax['Account Code'] = 1910
         tax['Amount'] = tax['VAT (Billing Currency)']
         tax['Cur_amount'] = tax['Amount']
         tax['Invoice Number'] = tax['Receipt'].astype(str) + ' ' + tax['Payment Receipts'].astype(str) + ' ' + tax['Service Code'].astype(str)
-        tax['Description'] = 'VAT for Invoice ' + tax['Invoice Number'].astype(str)
+        tax['Description'] = tax['Invoice Number'].astype(str) + ' POS ' + tax['Position Number'].astype(str) + ' ' + tax['Name'].astype(str) + ' ' + tax['Service Description 1'].astype(str)
         tax['Cost Centre'] = pd.NA
         tax['Project No'] = pd.NA
         tax['Activity Code'] = pd.NA
         tax['Tax Code'] = pd.NA
         tax['SUPID'] = 41253
         # ========== DETAILS (GL - 4300/4301) ==========
-        cols_to_use = ['Invoice Number', 'Cost Center', 'Net (Billing Currency)', 'Invoice Date', 'Receipt', 'Payment Receipts', 'Service Code'] + \
+        cols_to_use = ['Invoice Number', 'Cost Center', 'Net (Billing Currency)', 'Receipt Date', 'Receipt', 'Payment Receipts', 'Service Code'] + \
+                      (['Position Number'] if 'Position Number' in df.columns else []) + \
+                      (['Name'] if 'Name' in df.columns else []) + \
+                      (['Service Description 1'] if 'Service Description 1' in df.columns else []) + \
                       (['VAT Rate (%)'] if 'VAT Rate (%)' in df.columns else []) + \
                       (['Project Number'] if 'Project Number' in df.columns else [])
         rest = df[cols_to_use].copy()
@@ -593,19 +622,34 @@ elif page == "🏨 Ehotel - Ausclen":
             )
             rest['Project No'] = rest['Project Number']
             
-            # Format Project Number with dash
-            mask = rest['Project No'].astype(str).str.len() == 16
-            mask1 = rest['Project No'].astype(str).str.len() == 17
-            mask2 = rest['Project No'].astype(str) == 'NO'
-            rest.loc[mask, 'Project No'] = rest.loc[mask, 'Project No'].astype(str).str[:12] + '-0' + rest.loc[mask, 'Project No'].astype(str).str[12:]
-            rest.loc[mask1, 'Project No'] = rest.loc[mask1, 'Project No'].astype(str).str[:14] + '-' + rest.loc[mask1, 'Project No'].astype(str).str[14:]
+            # Format Project Number with dash - handle NaN values
+            rest['Project No'] = rest['Project No'].astype(str)
+            # Replace 'nan' strings with empty string
+            rest.loc[rest['Project No'] == 'nan', 'Project No'] = ''
+            mask = rest['Project No'].str.len() == 16
+            mask1 = rest['Project No'].str.len() == 17
+            mask2 = rest['Project No'] == 'NO'
+            rest.loc[mask, 'Project No'] = rest.loc[mask, 'Project No'].str[:12] + '-0' + rest.loc[mask, 'Project No'].str[12:]
+            rest.loc[mask1, 'Project No'] = rest.loc[mask1, 'Project No'].str[:14] + '-' + rest.loc[mask1, 'Project No'].str[14:]
             rest.loc[mask2, 'Project No'] = ''
         else:
             rest['Account Code'] = 6300
-            rest['Project No'] = pd.NA
+            rest['Project No'] = ''
         
         rest['Invoice Number'] = rest['Receipt'].astype(str) + ' ' + rest['Payment Receipts'].astype(str) + ' ' + rest['Service Code'].astype(str)
-        rest['Description'] = 'Net amount for Invoice ' + rest['Invoice Number'].astype(str)
+        
+        # Build description with optional columns
+        description_parts = [rest['Invoice Number'].astype(str)]
+        if 'Position Number' in rest.columns:
+            description_parts.append(' POS ' + rest['Position Number'].astype(str))
+        if 'Name' in rest.columns:
+            description_parts.append(' ' + rest['Name'].astype(str))
+        if 'Service Description 1' in rest.columns:
+            description_parts.append(' ' + rest['Service Description 1'].astype(str))
+        
+        rest['Description'] = description_parts[0]
+        for part in description_parts[1:]:
+            rest['Description'] = rest['Description'] + part
         rest['Cost Centre'] = rest['Cost Center']
         rest['Activity Code'] = 110
         
@@ -633,7 +677,7 @@ elif page == "🏨 Ehotel - Ausclen":
         
         # Reorder columns to match Airplus format
         desired_columns = ['Account Code', 'Cost Centre', 'Project No', 'Activity Code', 
-                           'Invoice No', 'Invoice Date', 'Cur_amount', 'Amount', 
+                           'Invoice No', 'Receipt Date', 'Cur_amount', 'Amount', 
                            'Description', 'Tax Code', 'Posting type', 'SUPID']
         combined = combined[desired_columns]
         return combined
@@ -653,9 +697,13 @@ elif page == "🏨 Ehotel - Ausclen":
             'MwSt(AbrW)': 'VAT (Billing Currency)',
             'Brutto(AW)': 'Gross (Billing Currency)',
             'Beleg': 'Receipt',
+            'Belegdatum': 'Receipt Date',
             'Zahlbelege': 'Payment Receipts',
             'Leistungscode': 'Service Code',
             'MwSt-Satz(%)': 'VAT Rate (%)',
+            'Positionsnummer': 'Position Number',
+            'Name': 'Name',
+            'Leistungsbeschreibung1': 'Service Description 1',
         }
         
         df = df.rename(columns=german_to_english)
@@ -664,7 +712,7 @@ elif page == "🏨 Ehotel - Ausclen":
 
     st.sidebar.header("📁 Upload Files")
     uploaded_files = st.sidebar.file_uploader(
-        "Choose Ausclen CSV files",
+        "Choose Auslagen CSV files",
         type=['csv'],
         accept_multiple_files=True,
         key="ehotel_aus"
@@ -699,7 +747,7 @@ elif page == "🏨 Ehotel - Ausclen":
                     st.download_button(
                         label="📥 Download Excel File",
                         data=excel_buffer.getvalue(),
-                        file_name="Ehotel_Ausclen_Journal.xlsx",
+                        file_name="Ehotel_Auslagen_Journal.xlsx",
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
                     
