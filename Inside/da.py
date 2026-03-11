@@ -6,7 +6,7 @@ import os
 script_dir = os.path.dirname(os.path.abspath(__file__))
 # Go up one level to parent directory
 parent_dir = os.path.dirname(script_dir)
-csv_path = os.path.join(parent_dir, 'Test.csv')
+csv_path = os.path.join(parent_dir, '1.csv')
 #csv_path1 = os.path.join(parent_dir, 'Aus.csv')
 
 # Read CSV with correct delimiter and encoding

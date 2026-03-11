@@ -548,10 +548,25 @@ elif page == "🏨 Ehotel - Auslagen":
         df = df.copy()
         
         # Convert numeric columns with comma decimals
-        numeric_cols = ['VAT (Billing Currency)', 'Net (Billing Currency)', 'Gross Amount', 'Gross (Billing Currency)', 'VAT Rate (%)']
+        # Use Sales Currency columns (VerkW) as fallback if Billing Currency (AbrW) is empty
+        numeric_cols = ['VAT (Billing Currency)', 'Net (Billing Currency)', 'Gross Amount', 'Gross (Billing Currency)', 'VAT Rate (%)', 
+                       'Net (Sales Currency)', 'VAT (Sales Currency)', 'Gross (Sales Currency)']
         for col in numeric_cols:
             if col in df.columns:
-                df[col] = df[col].astype(str).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
+                # Remove thousands separator (.) and replace decimal separator (,) with dot
+                df[col] = df[col].astype(str).str.replace('.', '', regex=False).str.replace(',', '.').apply(pd.to_numeric, errors='coerce')
+        
+        # If Billing Currency Net is empty, use Sales Currency Net
+        if 'Net (Billing Currency)' in df.columns and 'Net (Sales Currency)' in df.columns:
+            df['Net (Billing Currency)'] = df['Net (Billing Currency)'].fillna(df['Net (Sales Currency)'])
+        
+        # If Billing Currency VAT is empty, use Sales Currency VAT
+        if 'VAT (Billing Currency)' in df.columns and 'VAT (Sales Currency)' in df.columns:
+            df['VAT (Billing Currency)'] = df['VAT (Billing Currency)'].fillna(df['VAT (Sales Currency)'])
+        
+        # If Billing Currency Gross is empty, use Sales Currency Gross
+        if 'Gross (Billing Currency)' in df.columns and 'Gross (Sales Currency)' in df.columns:
+            df['Gross (Billing Currency)'] = df['Gross (Billing Currency)'].fillna(df['Gross (Sales Currency)'])
         
         # Convert date columns
         date_cols = ['Invoice Date', 'Receipt Date']
@@ -573,7 +588,7 @@ elif page == "🏨 Ehotel - Auslagen":
         total['Posting type'] = 'AP'
         total['Account Code'] = 1300
         total['Amount'] = total['Gross (Billing Currency)'] * -1
-        total['Cur_amount'] = total['Amount']
+        total['Cur_amount'] = total['Gross (Billing Currency)'] * -1
         total['Invoice Number'] = total['Receipt'].astype(str) + ' ' + total['Payment Receipts'].astype(str) + ' ' + total['Service Code'].astype(str)
         total['Description'] = total['Invoice Number'].astype(str) + ' POS ' + total['Position Number'].astype(str) + ' ' + total['Name'].astype(str) + ' ' + total['Service Description 1'].astype(str)
         total['Cost Centre'] = pd.NA
@@ -670,20 +685,32 @@ elif page == "🏨 Ehotel - Auslagen":
             rest['Tax Code'] = tax_codes
         else:
             rest['Tax Code'] = 'ZE'
+        
+        # Ensure Project No exists in rest
+        if 'Project No' not in rest.columns:
+            rest['Project No'] = pd.NA
+        
         rest.rename(columns={'Invoice Number': 'Invoice No'}, inplace=True)
         
         # Rename all dataframes for consistency
         total.rename(columns={'Invoice Number': 'Invoice No'}, inplace=True)
         tax.rename(columns={'Invoice Number': 'Invoice No'}, inplace=True)
         
+        # Ensure all dataframes have all required columns before concat
+        required_cols = ['Account Code', 'Cost Centre', 'Project No', 'Activity Code', 
+                        'Invoice No', 'Receipt Date', 'Cur_amount', 'Amount', 
+                        'Description', 'Tax Code', 'Posting type', 'SUPID']
+        
+        for df_part in [total, tax, rest]:
+            for col in required_cols:
+                if col not in df_part.columns:
+                    df_part[col] = pd.NA
+        
         # Combine all
         combined = pd.concat([total, tax, rest], ignore_index=True)
         
         # Reorder columns to match Airplus format
-        desired_columns = ['Account Code', 'Cost Centre', 'Project No', 'Activity Code', 
-                           'Invoice No', 'Receipt Date', 'Cur_amount', 'Amount', 
-                           'Description', 'Tax Code', 'Posting type', 'SUPID']
-        combined = combined[desired_columns]
+        combined = combined[required_cols]
         return combined
 
 
@@ -700,6 +727,9 @@ elif page == "🏨 Ehotel - Auslagen":
             'Netto(AbrW)': 'Net (Billing Currency)',
             'MwSt(AbrW)': 'VAT (Billing Currency)',
             'Brutto(AW)': 'Gross (Billing Currency)',
+            'Netto(VerkW)': 'Net (Sales Currency)',
+            'MwSt(VerkW)': 'VAT (Sales Currency)',
+            'Brutto(VW)': 'Gross (Sales Currency)',
             'Beleg': 'Receipt',
             'Belegdatum': 'Receipt Date',
             'Zahlbelege': 'Payment Receipts',
